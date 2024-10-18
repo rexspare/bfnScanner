@@ -29,10 +29,17 @@ enum ALERT_HEADER {
 }
 
 
+const WEB_SERVICE = 'https://h29887778.stratoserver.net:83/WSDL/zuko_services';
+const MENDANT = 'VFL_WOLFSBURG';
+const DEVICE_ID = '352714110324019';
+
 export {
     SCREENS,
     ASYNC_KEYS,
     ROUTES,
     ALERT_TYPES,
     ALERT_HEADER,
+    WEB_SERVICE,
+    MENDANT,
+    DEVICE_ID
 }

@@ -32,7 +32,8 @@ enum COLORS {
     RED_OPACITY = "rgba(171, 0, 0, 0.1)",
     SUCCESS = "#008001",
     BORDER_GREY = "#EDEDED",
-    BUTTON = "#afafaf"
+    BUTTON = "#afafaf",
+    YELLOW = "#fcfa56",
 }
 
 
