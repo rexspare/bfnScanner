@@ -16,11 +16,11 @@ export interface IAppState {
 }
 
 const initialState: IAppState = {
-  webService: WEB_SERVICE,
+  webService: "https://h2955251.stratoserver.net/mobile/",
   setWebService: () => { },
-  mendant: MENDANT,
+  mendant: "BFN_TESTMANDANT",
   setMendant: () => { },
-  deviceId: DEVICE_ID,
+  deviceId: "352714114357072",
   setDeviceId: () => { },
 };
 

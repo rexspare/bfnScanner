@@ -10,10 +10,17 @@ const styles = StyleSheet.create({
         height: 50 + StatusBar?.currentHeight,
         width: '100%',
         backgroundColor: COLORS.ANDROID_GREEN,
-        justifyContent: 'center',
-        alignItems: 'flex-start',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: '5%',
-        paddingTop: StatusBar.currentHeight
+        paddingTop: StatusBar.currentHeight,
+    },
+    logo: {
+        width: hp(20),
+        height: hp(20),
+        resizeMode: 'contain',
+        backgroundColor: COLORS.WHITE
     },
     context: {
         flex: 1,
@@ -30,12 +37,14 @@ const styles = StyleSheet.create({
     txt: {
         color: COLORS.BLACK,
         fontSize: hp(2.5),
-        marginVertical: hp(4)
+        marginVertical: hp(4),
     },
     txt1: {
         color: COLORS.BLACK,
         fontSize: hp(2),
-        marginVertical: hp(3)
+        marginVertical: hp(3),
+        textAlign: 'center',
+        fontWeight: '500'
     },
     txt2: {
         color: COLORS.WHITE,

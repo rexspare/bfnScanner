@@ -3,6 +3,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import React from 'react';
 import { SCREENS } from '../assets/constants';
 import { HomeScreen, SettingScreen } from '../screens';
+import { COLORS } from '../assets/stylesGuide';
 
 
 export type InitialNavigationStackParamList = {
@@ -20,6 +21,10 @@ const Root = () => {
         <NavigationContainer  >
             <Drawer.Navigator screenOptions={{
                 headerShown: false,
+                drawerLabelStyle: {
+                    color: COLORS.ANDROID_GREEN
+                },
+                drawerActiveTintColor: COLORS.ANDROID_GREEN
             }}>
                 <Drawer.Screen name={SCREENS.MAIN} component={HomeScreen} />
                 <Drawer.Screen name={SCREENS.SETTING} component={SettingScreen} />

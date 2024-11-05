@@ -4,14 +4,15 @@ enum SCREENS {
 }
 
 enum ASYNC_KEYS {
-    TOKEN = "@TOKEN",
-    USER = "@USER",
-    ONBOARDING = "@ONBOARDING"
+    WEB_SERVICE = "@WEB_SERVICE",
+    MENDANT = "@MENDANT",
+    DEVICE_ID = "@DEVICE_ID",
+    PASSWORD = "@PASSWORD"
 }
 
 
 enum ROUTES {
-  
+
 }
 
 
