@@ -30,9 +30,9 @@ enum ALERT_HEADER {
 }
 
 
-const WEB_SERVICE = 'https://h29887778.stratoserver.net:83/WSDL/zuko_services';
-const MENDANT = 'VFL_WOLFSBURG';
-const DEVICE_ID = '352714110324019';
+const WEB_SERVICE = 'https://h2955251.stratoserver.net/mobile/';
+const MENDANT = 'BFN_TESTMANDANT';
+const DEVICE_ID = '352714114357072';
 
 export {
     SCREENS,

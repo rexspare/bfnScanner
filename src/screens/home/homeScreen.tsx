@@ -46,6 +46,7 @@ let test = 'false';
 let showDisplay = 'Main';
 let device = '352714112750542';
 let mandant = 'FCK';
+let ownerVal = '';
 let loading = false;
 
 const HomeScreen = () => {
@@ -80,25 +81,26 @@ const HomeScreen = () => {
     displayColor: backgroundColor,
     fontColor: textColor,
     controlCard: cC,
+    owner: ownerVal
   });
 
   const [settings, setsettings] = useState<any>({})
 
 
-  // useEffect(() => {
-  //   ZebraScanner?.startReader();
+  useEffect(() => {
+    ZebraScanner?.startReader();
 
-  //   return () => {
-  //     ZebraScanner?.stopReader();
-  //   }
-  // }, []);
+    return () => {
+      ZebraScanner?.stopReader();
+    }
+  }, []);
 
-  // useEffect(() => {
-  //   ZebraScanner?.on('barcodeReadSuccess', event => {
-  //     const code = event.data;
-  //     setLastScanned(code);
-  //   });
-  // }, [state.selectedOption]);
+  useEffect(() => {
+    ZebraScanner?.on('barcodeReadSuccess', event => {
+      const code = event.data;
+      setLastScanned(code);
+    });
+  }, [state.selectedOption]);
 
   const playSound = (name: any) => {
     name.play((success: any) => {
@@ -162,6 +164,7 @@ const HomeScreen = () => {
           let display_color = data.TickArray.item.display_color;
           let font_color = data.TickArray.item.font_color;
           let control_card = data.TickArray.item.controlcard;
+          let owner = data.TickArray.item.owner;
           let status = data.TickArray.item.status;
 
           let number_of_remaining_entries = data.TickArray.item.number_of_remaining_entries;
@@ -175,6 +178,7 @@ const HomeScreen = () => {
             fontColor: font_color,
             controlCard: control_card,
             entryexit: 'Richtungswechsel',
+            owner: owner
           }));
 
           if (display_color === 'yellow' || display_color === 'green') {
@@ -200,6 +204,7 @@ const HomeScreen = () => {
               fontColor: textColor,
               controlCard: cC,
               entryexit: richtungwechsel,
+              owner: ownerVal
             }));
             setLastScanned('');
           }, 5000);
@@ -242,6 +247,7 @@ const HomeScreen = () => {
         let display_color = data.TickArray.item.display_color;
         let font_color = data.TickArray.item.font_color;
         let control_card = data.TickArray.item.controlcard;
+        let owner = data.TickArray.item.owner;
         let status = data.TickArray.item.status;
 
         setState((prevState: any) => ({
@@ -253,6 +259,7 @@ const HomeScreen = () => {
           fontColor: font_color,
           controlCard: control_card,
           entryexit: 'Richtungswechsel',
+          owner: owner
         }));
 
         if (display_color === 'green') {
@@ -271,6 +278,7 @@ const HomeScreen = () => {
             fontColor: textColor,
             controlCard: cC,
             entryexit: richtungwechsel,
+            owner: ownerVal
           }));
 
           setLastScanned('');
@@ -424,7 +432,7 @@ const HomeScreen = () => {
     }
     receiveSettings();
     checkSettingCard(props);
-  }, [state.selectedOption, state.mode, isConnected, webService, mendant, deviceId]);
+  }, [state.selectedOption, state.mode, isConnected, webService, mendant, deviceId, isExit]);
 
   useEffect(() => {
     if (lastScanned !== '') {
@@ -487,6 +495,14 @@ const HomeScreen = () => {
         <Text style={[styles.txt1, {
           fontWeight: "400"
         }]}>BEN Access Control - GmbH</Text>
+
+        {
+          state.owner &&
+          <Text style={[styles.txt1, {
+            fontWeight: "400",
+            marginTop: 0
+          }]}>{state.owner}</Text>
+        }
 
         <TouchableOpacity
           activeOpacity={0.8}

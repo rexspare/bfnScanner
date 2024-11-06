@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 5,
-        marginTop: hp(8)
+        marginTop: hp(6)
     },
     btnTxt: {
         color: COLORS.WHITE,
