@@ -16,7 +16,8 @@ export interface IAppState {
 }
 
 const initialState: IAppState = {
-  webService: "https://h2955251.stratoserver.net/mobile/",
+  // webService: "https://h2955251.stratoserver.net/mobile/",
+  webService: "https://h2955251.stratoserver.net",
   setWebService: () => { },
   mendant: "BFN_TESTMANDANT",
   setMendant: () => { },

@@ -20,7 +20,6 @@ const styles = StyleSheet.create({
         width: hp(20),
         height: hp(20),
         resizeMode: 'contain',
-        backgroundColor: COLORS.WHITE
     },
     context: {
         flex: 1,

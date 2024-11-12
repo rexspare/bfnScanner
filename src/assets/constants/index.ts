@@ -7,7 +7,9 @@ enum ASYNC_KEYS {
     WEB_SERVICE = "@WEB_SERVICE",
     MENDANT = "@MENDANT",
     DEVICE_ID = "@DEVICE_ID",
-    PASSWORD = "@PASSWORD"
+    PASSWORD = "@PASSWORD",
+    WHITE_LIST = "@WHITE_LIST",
+    OFFLINE_ENTRIES = "@OFFLINE_ENTRIES"
 }
 
 
@@ -30,7 +32,7 @@ enum ALERT_HEADER {
 }
 
 
-const WEB_SERVICE = 'https://h2955251.stratoserver.net/mobile/';
+const WEB_SERVICE = 'https://h2955251.stratoserver.net';
 const MENDANT = 'BFN_TESTMANDANT';
 const DEVICE_ID = '352714114357072';
 

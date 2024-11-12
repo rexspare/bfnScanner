@@ -12,6 +12,8 @@ import { useNetInfo } from "@react-native-community/netinfo";
 import Sound from 'react-native-sound';
 import { appStateSelectors, useApp } from '../../states/app'
 import useSyncData from '../../hooks/useSyncData'
+import { getItem, setItem } from '../../services/asyncStorage'
+import { ASYNC_KEYS } from '../../assets/constants'
 
 Sound.setCategory('Playback');
 const success = new Sound('success.mp3', Sound.MAIN_BUNDLE, (success) => {
@@ -57,7 +59,7 @@ const HomeScreen = () => {
   const deviceId = useApp(appStateSelectors.deviceId)
   const test = useSyncData(device, mandant, webService?.split('.net')[0] + '.net');
 
-  const isConnected = useNetInfo().isConnected;
+  const isConnected = useNetInfo().isConnected
   const [lastScanned, setLastScanned] = useState('');
   const [isExit, setisExit] = useState(false)
   const isExitRef = useRef(false)
@@ -85,6 +87,71 @@ const HomeScreen = () => {
   });
 
   const [settings, setsettings] = useState<any>({})
+  const [accessToken, setaccessToken] = useState("")
+  const [whiteList, setwhiteList] = useState<any>([])
+  const [offlineEntries, setofflineEntries] = useState<any>([])
+  const [whiteListLoading, setwhiteListLoading] = useState(false)
+
+
+  const handleGetWhiteList = async () => {
+    setwhiteListLoading(true)
+    fetch(`${webService}/oauth/v2/token?client_id=1_5w8zrdasdafr4tregd454cw0c0kswcgs0oks40s&client_secret=sdgggskokererg4232404gc4csdgfdsgf8s8ck5s&grant_type=client_credentials`, {
+      method: 'GET',
+    })
+      .then((response) => response.json())
+      .then((json) => {
+        if (json?.access_token) {
+          setaccessToken(json.access_token)
+          fetch(`${webService}/api/whitelist`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${json.access_token}`,
+            }
+          })
+            .then((res) => res.json())
+            .then(async (data) => {
+              if (data?.success == true) {
+                setwhiteList(data.data)
+                await setItem(ASYNC_KEYS.WHITE_LIST, data?.data)
+              } else {
+                const list = await getItem(ASYNC_KEYS.WHITE_LIST, [])
+                setwhiteList(list)
+              }
+              setwhiteListLoading(false)
+            })
+            .catch(async (error) => {
+              const list = await getItem(ASYNC_KEYS.WHITE_LIST, [])
+              setwhiteList(list)
+              console.log("WHITELIST ==>>", error);
+              setwhiteListLoading(false)
+            })
+        }
+      })
+      .catch(async (error) => {
+        console.log("OAUTH ==>>", error);
+        setwhiteListLoading(false)
+        const list = await getItem(ASYNC_KEYS.WHITE_LIST, [])
+        setwhiteList(list)
+      })
+
+
+  }
+
+  const getOfflineEntries = async () => {
+    try {
+      const entries = await getItem(ASYNC_KEYS.OFFLINE_ENTRIES, [])
+      setofflineEntries(entries)
+    } catch (error) {
+      console.log("getOfflineEntries ==>>", error);
+    }
+  }
+
+  useEffect(() => {
+    setTimeout(() => {
+      getOfflineEntries()
+      handleGetWhiteList()
+    }, 1000);
+  }, [webService, isConnected])
 
 
   useEffect(() => {
@@ -113,29 +180,137 @@ const HomeScreen = () => {
   };
 
 
-  const onError = () => {
+  const onError = (showAlert = true, msg: string = "") => {
     playSound(error);
     setLastScanned('');
-    Alert.alert("Fehler", "Ungültige Daten angegeben")
+    if (showAlert) {
+      Alert.alert("Fehler", "Ungültige Daten angegeben")
+    }
     setState((prevState: any) => ({
       ...prevState,
-      message1: "Ungültige Daten angegeben",
+      message1: msg || "Ungültige Daten angegeben",
+      displayColor: "red"
+
     }));
 
     setTimeout(() => {
       setState((prevState: any) => ({
         ...prevState,
         message1: message_1,
+        displayColor: backgroundColor
       }));
       setLastScanned('');
     }, 5000);
   }
 
+  // ** Save entry into offline Data
+  const saveOfflineEntry = async (entry: any) => {
+    try {
+      const exists = whiteList?.find((x: any) => x?.barcode_id == entry.barcode)
+
+      const alreadyScanned = offlineEntries?.find((x: any) => x?.barcode == entry?.barcode)
+
+
+      if (alreadyScanned?.barcode) {
+        onError(false, "Dieses Ticket wurde bereits gescannt");
+        return
+      }
+
+
+      if (exists?.barcode_id) {
+
+        const mData = [...offlineEntries, entry]
+        setofflineEntries((prev: any) => [...prev, entry])
+
+        await setItem(ASYNC_KEYS.OFFLINE_ENTRIES, mData)
+
+        setState((prevState: any) => ({
+          ...prevState,
+          contentMain: content,
+          message1: "im Offline-Modus speichern",
+          // message2: "im Offline-Modus speichern",
+          displayColor: 'green',
+          entryexit: 'Richtungswechsel',
+        }));
+
+        playSound(success);
+
+        setTimeout(() => {
+          setState((prevState: any) => ({
+            ...prevState,
+            contentMain: <Text>Scanner ready</Text>,
+            message1: message_1,
+            message2: message_2,
+            displayColor: backgroundColor,
+            fontColor: textColor,
+            controlCard: cC,
+            entryexit: richtungwechsel,
+            owner: ownerVal
+          }));
+
+          setLastScanned('');
+        }, 5000);
+
+      } else {
+        onError(false, "Der gescannte Code ist in den Offlinedaten nicht vorhanden");
+      }
+
+
+    } catch (error) {
+      console.log("saveOfflineEntry ==>>", error);
+      onError();
+    }
+  }
+
+
+  // ** Post entry from offline Data
+  const commitOfflineData = async () => {
+    try {
+
+      const offlineList: any = await getItem(ASYNC_KEYS.OFFLINE_ENTRIES, [])
+
+      for (let i = 0; i < offlineList.length; i++) {
+        const entry = offlineList[i];
+        try {
+
+          await fetch(`${webService}${entry?.direction == 'entry' ? '/mobile/entry' : '/mobile/exit'}`, {
+            method: 'PUT',
+            headers: {
+              Authorization:
+                'sYFnTORCM03hplg4O95c1Z5fvMFXJppLXByKkzwHjc3oEkMSpMxdnGuQbVTQ8OX5',
+              'Content-Type': 'text/plain',
+            },
+            body: `{"barcode": "${entry?.barcode}","device":"${deviceId}","mandant": "${mendant}"}`,
+          })
+
+          const filtered = offlineList.filter((x: any) => x?.barcode != entry.barcode)
+          setofflineEntries(filtered)
+
+          await setItem(ASYNC_KEYS.OFFLINE_ENTRIES, filtered)
+
+        } catch (error) {
+          console.log("commitOfflineData for loop ==>>", error);
+        }
+
+      }
+    } catch (error) {
+      console.log("commitOfflineData ==>>", error);
+
+    }
+  }
+
+
+  useEffect(() => {
+    if (isConnected) {
+      commitOfflineData()
+    }
+  }, [isConnected])
+
 
   // ** This function is the function which call the backend api and check if the ticket is valid for the entrance
   const receiveEntryData = (props: any) => {
     if (isConnected) {
-      fetch(webService + 'entry', {
+      fetch(webService + '/mobile/entry', {
         method: 'PUT',
         headers: {
           Authorization:
@@ -214,85 +389,100 @@ const HomeScreen = () => {
           onError()
         });
     } else {
-      console.log('Error');
-      onError()
+      saveOfflineEntry({
+        barcode: props,
+        direction: "entry",
+        webService: webService,
+        mendant: mendant,
+        deviceId: deviceId
+      })
     }
   };
 
   // ** This function is the function which call the backend api and check if the ticket is valid for the exit
   const receiveExitData = (props: any) => {
-    fetch(webService + 'exit', {
-      method: 'PUT',
-      headers: {
-        Authorization:
-          'sYFnTORCM03hplg4O95c1Z5fvMFXJppLXByKkzwHjc3oEkMSpMxdnGuQbVTQ8OX5',
-        'Content-Type': 'text/plain',
-      },
-      body: `{"barcode": "${props}","device":"${deviceId}","mandant": "${mendant}"}`,
-    })
-      .then((response) => response.json())
-      .then((json) => {
-        content = JSON.stringify(json);
-        let data = JSON.parse(content);
+    if (isConnected) {
+      fetch(webService + '/mobile/exit', {
+        method: 'PUT',
+        headers: {
+          Authorization:
+            'sYFnTORCM03hplg4O95c1Z5fvMFXJppLXByKkzwHjc3oEkMSpMxdnGuQbVTQ8OX5',
+          'Content-Type': 'text/plain',
+        },
+        body: `{"barcode": "${props}","device":"${deviceId}","mandant": "${mendant}"}`,
+      })
+        .then((response) => response.json())
+        .then((json) => {
+          content = JSON.stringify(json);
+          let data = JSON.parse(content);
 
-        console.log("EXIT ==>>", data);
+          console.log("EXIT ==>>", data);
 
-        if (!data?.TickArray?.item) {
-          onError()
-          return
-        }
+          if (!data?.TickArray?.item) {
+            onError()
+            return
+          }
 
-        let message1 = data.TickArray.item.message_1;
-        let message2 = data.TickArray.item.message_2;
-        let display_color = data.TickArray.item.display_color;
-        let font_color = data.TickArray.item.font_color;
-        let control_card = data.TickArray.item.controlcard;
-        let owner = data.TickArray.item.owner;
-        let status = data.TickArray.item.status;
+          let message1 = data.TickArray.item.message_1;
+          let message2 = data.TickArray.item.message_2;
+          let display_color = data.TickArray.item.display_color;
+          let font_color = data.TickArray.item.font_color;
+          let control_card = data.TickArray.item.controlcard;
+          let owner = data.TickArray.item.owner;
+          let status = data.TickArray.item.status;
 
-        setState((prevState: any) => ({
-          ...prevState,
-          contentMain: content,
-          message1: message1,
-          message2: message2,
-          displayColor: display_color,
-          fontColor: font_color,
-          controlCard: control_card,
-          entryexit: 'Richtungswechsel',
-          owner: owner
-        }));
-
-        if (display_color === 'green') {
-          playSound(success);
-        } else {
-          playSound(error);
-        }
-
-        setTimeout(() => {
           setState((prevState: any) => ({
             ...prevState,
-            contentMain: <Text>Scanner ready</Text>,
-            message1: message_1,
-            message2: message_2,
-            displayColor: backgroundColor,
-            fontColor: textColor,
-            controlCard: cC,
-            entryexit: richtungwechsel,
-            owner: ownerVal
+            contentMain: content,
+            message1: message1,
+            message2: message2,
+            displayColor: display_color,
+            fontColor: font_color,
+            controlCard: control_card,
+            entryexit: 'Richtungswechsel',
+            owner: owner
           }));
 
-          setLastScanned('');
-        }, 5000);
+          if (display_color === 'green') {
+            playSound(success);
+          } else {
+            playSound(error);
+          }
+
+          setTimeout(() => {
+            setState((prevState: any) => ({
+              ...prevState,
+              contentMain: <Text>Scanner ready</Text>,
+              message1: message_1,
+              message2: message_2,
+              displayColor: backgroundColor,
+              fontColor: textColor,
+              controlCard: cC,
+              entryexit: richtungwechsel,
+              owner: ownerVal
+            }));
+
+            setLastScanned('');
+          }, 5000);
+        })
+        .catch((_error) => {
+          console.log('Error');
+          onError()
+        });
+    } else {
+      saveOfflineEntry({
+        barcode: props,
+        direction: "exit",
+        webService: webService,
+        mendant: mendant,
+        deviceId: deviceId
       })
-      .catch((_error) => {
-        console.log('Error');
-        onError()
-      });
+    }
   };
 
   const receiveSettings = () => {
 
-    fetch(webService + 'settings', {
+    fetch(webService + '/mobile/settings', {
       method: 'PUT',
       headers: {
         Authorization:
@@ -403,7 +593,7 @@ const HomeScreen = () => {
             entryexit: 'Richtungswechsel',
           }));
 
-          receiveSettings();
+          // receiveSettings();
           checkSettingCard(props);
           playSound(error);
         }
@@ -424,13 +614,13 @@ const HomeScreen = () => {
 
         return;
       } else {
-        receiveSettings();
+        // receiveSettings();
         checkSettingCard(props);
 
         return;
       }
     }
-    receiveSettings();
+    // receiveSettings();
     checkSettingCard(props);
   }, [state.selectedOption, state.mode, isConnected, webService, mendant, deviceId, isExit]);
 
@@ -442,6 +632,11 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (webService && deviceId && mendant) {
+
+      console.log({
+        webService, deviceId, mendant
+      });
+
       receiveSettings()
     }
   }, [webService, deviceId, mendant])
@@ -469,7 +664,7 @@ const HomeScreen = () => {
         <View style={{
           width: '90%',
           height: "40%",
-          backgroundColor: isConnected ? state.displayColor : COLORS.YELLOW,
+          backgroundColor: state?.displayColor == COLORS.WHITE ? isConnected ? state.displayColor : COLORS.YELLOW : state.displayColor,
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: '5%'
@@ -494,7 +689,7 @@ const HomeScreen = () => {
 
         <Text style={[styles.txt1, {
           fontWeight: "400"
-        }]}>BEN Access Control - GmbH</Text>
+        }]}>{settings?.description1 ? `${settings?.description1} - ${settings.description2}` : "BEN Access Control - GmbH"}</Text>
 
         {
           state.owner &&
@@ -506,9 +701,16 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           activeOpacity={0.8}
-          // onPress={() => {
-          //   setLastScanned("2701010191003509002010122")
-          // }}
+          onPress={() => {
+            saveOfflineEntry({
+              barcode: "175549820599007139099037",
+              direction: "exit",
+              webService: webService,
+              mendant: mendant,
+              deviceId: deviceId
+            })
+            // setLastScanned("2024010101011110110011")
+          }}
           style={styles.btn}
         >
           <Text style={styles.btnTxt}>{isExit ? "AUSGANG" : "Eingang"}</Text>
@@ -532,9 +734,9 @@ const HomeScreen = () => {
       {/* CONTEXT */}
 
       <View style={styles.footer}>
-        <Text style={styles.txt2}>Clearing Hotline: 0151 / 10850215</Text>
+        <Text style={styles.txt2}>Offline Entries: {offlineEntries.length} | WhiteList: {whiteListLoading ? 'loading' : whiteList.length}</Text>
       </View>
-    </View>
+    </View >
   )
 }
 

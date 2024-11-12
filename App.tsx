@@ -1,16 +1,18 @@
-import React, { useEffect } from 'react';
-import { LogBox, StatusBar } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, LogBox, StatusBar, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import Root from './src/navigation/root';
 import { appStateSelectors, useApp } from './src/states/app';
 import { getItem } from './src/services/asyncStorage';
 import { ASYNC_KEYS, DEVICE_ID, MENDANT, WEB_SERVICE } from './src/assets/constants';
+import { COLORS, hp } from './src/assets/stylesGuide';
 
 
 const App = () => {
   const setWebService = useApp(appStateSelectors.setWebService)
   const setMendant = useApp(appStateSelectors.setMendant)
   const setDeviceId = useApp(appStateSelectors.setDeviceId)
+  const [appReady, setappReady] = useState(false)
 
   const getInitialData = async () => {
     try {
@@ -18,19 +20,16 @@ const App = () => {
       const mendantVal = await getItem(ASYNC_KEYS.MENDANT, MENDANT)
       const deviceIdVal = await getItem(ASYNC_KEYS.DEVICE_ID, DEVICE_ID)
 
-      console.log({
-        APP:true,
-        webSericeVal,
-        mendantVal,
-        deviceIdVal
-      });
-      
-
       setWebService(webSericeVal)
       setMendant(mendantVal)
       setDeviceId(deviceIdVal)
+      setTimeout(() => {
+        setappReady(true)
+      }, 1000);
     } catch (error) {
-
+      setTimeout(() => {
+        setappReady(true)
+      }, 1000);
     }
   }
 
@@ -46,7 +45,28 @@ const App = () => {
         backgroundColor={'transparent'}
         translucent
         barStyle={'light-content'} />
-      <Root />
+      {
+        appReady ?
+          <Root />
+          :
+          <View style={{
+            flex: 1,
+            backgroundColor: COLORS.BACKGROUND,
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+
+            <Image
+              source={require('./src/assets/images/logo.png')}
+              style={{
+                width: hp(30),
+                height: hp(30),
+                resizeMode: 'contain'
+              }}
+            />
+
+          </View>
+      }
       <Toast />
     </>
   )
