@@ -1,7 +1,7 @@
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
-import { TouchableOpacity, View, Text, Modal, Alert } from 'react-native';
+import { TouchableOpacity, View, Text, Modal, Alert, Switch } from 'react-native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 import { COLORS, hp } from '../../assets/stylesGuide';
@@ -22,6 +22,8 @@ const SettingScreen = () => {
   const setMendant = useApp(appStateSelectors.setMendant)
   const deviceId = useApp(appStateSelectors.deviceId)
   const setDeviceId = useApp(appStateSelectors.setDeviceId)
+  const downloadData = useApp(appStateSelectors.downloadData)
+  const setDownloadData = useApp(appStateSelectors.setDownloadData)
 
   const [webServiceVal, setwebServiceVal] = useState(webService)
   const [mendantVal, setmendantVal] = useState(mendant)
@@ -97,6 +99,15 @@ const SettingScreen = () => {
     }
   }
 
+  const onToggleOfflineMode = async (val: boolean) => {
+    try {
+      setDownloadData(val)
+      await setItem(ASYNC_KEYS.DOWNLOAD_DATA, val ? 'true' : 'false')
+    } catch (error) {
+
+    }
+  }
+
 
   return (
     <>
@@ -161,10 +172,22 @@ const SettingScreen = () => {
           </TouchableOpacity>
 
           <View style={{ marginTop: hp(3) }}></View>
+
+          <View style={styles.switchRow}>
+            <Text style={styles.switchTitle}>Download Data</Text>
+
+            <Switch
+              value={downloadData}
+              onValueChange={(val) => onToggleOfflineMode(val)}
+            />
+          </View>
+
+          <View style={{ marginTop: hp(3) }}></View>
+
         </Layout>
 
-
       </View>
+
       <Modal
         visible={modalVisible}
         onRequestClose={() => { }}

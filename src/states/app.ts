@@ -13,6 +13,8 @@ export interface IAppState {
   setMendant: Function;
   deviceId: string;
   setDeviceId: Function;
+  downloadData: boolean;
+  setDownloadData: Function;
 }
 
 const initialState: IAppState = {
@@ -23,6 +25,8 @@ const initialState: IAppState = {
   setMendant: () => { },
   deviceId: "352714114357072",
   setDeviceId: () => { },
+  downloadData: true,
+  setDownloadData: () => { }
 };
 
 /**
@@ -34,6 +38,7 @@ export const useApp = create<IAppState>((set, get) => ({
   setWebService: (val: any) => set({ webService: val }),
   setMendant: (val: any) => set({ mendant: val }),
   setDeviceId: (val: any) => set({ deviceId: val }),
+  setDownloadData: (val: any) => set({ downloadData: val }),
 }));
 
 /**

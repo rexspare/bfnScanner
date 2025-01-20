@@ -9,7 +9,8 @@ enum ASYNC_KEYS {
     DEVICE_ID = "@DEVICE_ID",
     PASSWORD = "@PASSWORD",
     WHITE_LIST = "@WHITE_LIST",
-    OFFLINE_ENTRIES = "@OFFLINE_ENTRIES"
+    DOWNLOAD_DATA = "@DOWNLOAD_DATA",
+    OFFLINE_ENTRIES = "@OFFLINE_ENTRIES",
 }
 
 
@@ -32,7 +33,8 @@ enum ALERT_HEADER {
 }
 
 
-const WEB_SERVICE = 'https://h2955251.stratoserver.net';
+// const WEB_SERVICE = 'https://h2955251.stratoserver.net';
+const WEB_SERVICE = 'https://h2885765.stratoserver.net';
 const MENDANT = 'BFN_TESTMANDANT';
 const DEVICE_ID = '352714114357072';
 

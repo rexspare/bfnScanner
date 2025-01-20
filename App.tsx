@@ -12,6 +12,7 @@ const App = () => {
   const setWebService = useApp(appStateSelectors.setWebService)
   const setMendant = useApp(appStateSelectors.setMendant)
   const setDeviceId = useApp(appStateSelectors.setDeviceId)
+  const setDownloadData = useApp(appStateSelectors.setDownloadData)
   const [appReady, setappReady] = useState(false)
 
   const getInitialData = async () => {
@@ -19,10 +20,12 @@ const App = () => {
       const webSericeVal = await getItem(ASYNC_KEYS.WEB_SERVICE, WEB_SERVICE)
       const mendantVal = await getItem(ASYNC_KEYS.MENDANT, MENDANT)
       const deviceIdVal = await getItem(ASYNC_KEYS.DEVICE_ID, DEVICE_ID)
+      const downloadDataVal = await getItem(ASYNC_KEYS.DOWNLOAD_DATA, "true")
 
       setWebService(webSericeVal)
       setMendant(mendantVal)
       setDeviceId(deviceIdVal)
+      setDownloadData(downloadDataVal == "true" ? true : false)
       setTimeout(() => {
         setappReady(true)
       }, 1000);

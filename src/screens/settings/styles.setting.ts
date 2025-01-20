@@ -1,5 +1,5 @@
 import { StyleSheet, StatusBar } from "react-native";
-import { COLORS, hp, wp } from "../../assets/stylesGuide";
+import { COLORS, FONT_SIZE, hp, wp } from "../../assets/stylesGuide";
 
 const styles = StyleSheet.create({
     main: {
@@ -74,7 +74,20 @@ const styles = StyleSheet.create({
         color: COLORS.DANGER,
         fontSize: 12,
         textAlign: 'left'
-    }
+    },
+    switchRow: {
+        width: '90%',
+        alignSelf: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+    },
+    switchTitle: {
+        textAlign: 'left',
+        fontSize: FONT_SIZE._16,
+        fontWeight: '500',
+        color: COLORS.BLACK
+    },
 
 })
 

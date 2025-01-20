@@ -1,8 +1,9 @@
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import styles from './styles.home'
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'
+import Feather from 'react-native-vector-icons/Feather'
 import { COLORS, hp, wp } from '../../assets/stylesGuide'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { InitialNavigationStackParamList } from '../../navigation/root'
@@ -14,6 +15,8 @@ import { appStateSelectors, useApp } from '../../states/app'
 import useSyncData from '../../hooks/useSyncData'
 import { getItem, setItem } from '../../services/asyncStorage'
 import { ASYNC_KEYS } from '../../assets/constants'
+import useData from '../../hooks/useData'
+import PrimaryInput from '../../components/primaryInput'
 
 Sound.setCategory('Playback');
 const success = new Sound('success.mp3', Sound.MAIN_BUNDLE, (success) => {
@@ -57,7 +60,9 @@ const HomeScreen = () => {
   const webService = useApp(appStateSelectors.webService)
   const mendant = useApp(appStateSelectors.mendant)
   const deviceId = useApp(appStateSelectors.deviceId)
+  const downloadData = useApp(appStateSelectors.downloadData)
   const test = useSyncData(device, mandant, webService?.split('.net')[0] + '.net');
+  const { saveDataToFile, readDataFromFile } = useData()
 
   const isConnected = useNetInfo().isConnected
   const [lastScanned, setLastScanned] = useState('');
@@ -91,9 +96,15 @@ const HomeScreen = () => {
   const [whiteList, setwhiteList] = useState<any>([])
   const [offlineEntries, setofflineEntries] = useState<any>([])
   const [whiteListLoading, setwhiteListLoading] = useState(false)
+  const [validationCode, setvalidationCode] = useState('')
+  const [isLoading, setisLoading] = useState(false)
 
 
   const handleGetWhiteList = async () => {
+    if (downloadData == false) {
+      return
+    }
+
     setwhiteListLoading(true)
     fetch(`${webService}/oauth/v2/token?client_id=1_5w8zrdasdafr4tregd454cw0c0kswcgs0oks40s&client_secret=sdgggskokererg4232404gc4csdgfdsgf8s8ck5s&grant_type=client_credentials`, {
       method: 'GET',
@@ -112,7 +123,7 @@ const HomeScreen = () => {
             .then(async (data) => {
               if (data?.success == true) {
                 setwhiteList(data.data)
-                await setItem(ASYNC_KEYS.WHITE_LIST, data?.data)
+                await saveDataToFile(data.data)
               } else {
                 const list = await getItem(ASYNC_KEYS.WHITE_LIST, [])
                 setwhiteList(list)
@@ -120,8 +131,10 @@ const HomeScreen = () => {
               setwhiteListLoading(false)
             })
             .catch(async (error) => {
-              const list = await getItem(ASYNC_KEYS.WHITE_LIST, [])
-              setwhiteList(list)
+              const list = await readDataFromFile()
+              if (list != false) {
+                setwhiteList(list)
+              }
               console.log("WHITELIST ==>>", error);
               setwhiteListLoading(false)
             })
@@ -129,18 +142,21 @@ const HomeScreen = () => {
       })
       .catch(async (error) => {
         console.log("OAUTH ==>>", error);
+        const list = await readDataFromFile()
+        if (list != false) {
+          setwhiteList(list)
+        }
         setwhiteListLoading(false)
-        const list = await getItem(ASYNC_KEYS.WHITE_LIST, [])
-        setwhiteList(list)
       })
-
 
   }
 
   const getOfflineEntries = async () => {
     try {
-      const entries = await getItem(ASYNC_KEYS.OFFLINE_ENTRIES, [])
-      setofflineEntries(entries)
+      const list = await readDataFromFile()
+      if (list != false) {
+        setwhiteList(list)
+      }
     } catch (error) {
       console.log("getOfflineEntries ==>>", error);
     }
@@ -151,7 +167,7 @@ const HomeScreen = () => {
       getOfflineEntries()
       handleGetWhiteList()
     }, 1000);
-  }, [webService, isConnected])
+  }, [webService, isConnected, downloadData])
 
 
   useEffect(() => {
@@ -309,6 +325,8 @@ const HomeScreen = () => {
 
   // ** This function is the function which call the backend api and check if the ticket is valid for the entrance
   const receiveEntryData = (props: any) => {
+    setisLoading(true)
+
     if (isConnected) {
       fetch(webService + '/mobile/entry', {
         method: 'PUT',
@@ -323,11 +341,7 @@ const HomeScreen = () => {
         .then((json) => {
           const content = JSON.stringify(json);
           let data = JSON.parse(content);
-
-          console.log("ENTRY ==>>", data);
-
-
-
+          setisLoading(false)
 
           if (!data?.TickArray?.item) {
             onError()
@@ -387,6 +401,7 @@ const HomeScreen = () => {
         .catch((_error) => {
           console.log('Error', _error);
           onError()
+          setisLoading(false)
         });
     } else {
       saveOfflineEntry({
@@ -481,7 +496,7 @@ const HomeScreen = () => {
   };
 
   const receiveSettings = () => {
-
+    setisLoading(true)
     fetch(webService + '/mobile/settings', {
       method: 'PUT',
       headers: {
@@ -495,6 +510,7 @@ const HomeScreen = () => {
       .then((json) => {
         content = JSON.stringify(json);
         let data = JSON.parse(content);
+        setisLoading(false)
 
 
         if (!data?.ReaderArr?.item) {
@@ -523,11 +539,17 @@ const HomeScreen = () => {
       .catch((error) => {
         console.log(error);
         setsettings({})
+        setisLoading(false)
       });
   };
 
-
   const checkEntryExit = (props: any) => {
+    if (downloadData == false) {
+      if (!lastScanned?.includes(validationCode)) {
+        onError()
+        return
+      }
+    }
 
     if (isExitRef.current == false) {
       setState((prevState: any) => ({
@@ -547,6 +569,7 @@ const HomeScreen = () => {
   };
 
   const checkSettingCard = (props: any) => {
+
     if (props === '21212121') {
       setState((prevState: any) => ({ ...prevState, showDisplay: 'Settings' }));
     } else {
@@ -557,72 +580,76 @@ const HomeScreen = () => {
 
   const getInfo = useCallback((props: any) => {
 
-    if (state.selectedOption === 'option2') {
+    // if (state.selectedOption === 'option2') {
 
-      if (!isConnected) {
-        const valid = test.checkData(props);
+    //   if (!isConnected) {
+    //     const valid = test.checkData(props);
 
-        if (valid) {
-          setState((prevState: any) => ({
-            ...prevState,
-            contentMain: content,
-            message1: 'Herzlich Willkommen',
-            message2: 'Ticket bestätigt',
-            displayColor: 'yellow',
-            entryexit: 'Richtungswechsel',
-          }));
-          playSound(success);
+    //     if (valid) {
+    //       setState((prevState: any) => ({
+    //         ...prevState,
+    //         contentMain: content,
+    //         message1: 'Herzlich Willkommen',
+    //         message2: 'Ticket bestätigt',
+    //         displayColor: 'yellow',
+    //         entryexit: 'Richtungswechsel',
+    //       }));
+    //       playSound(success);
 
-        } else if (valid === null) {
-          setState((prevState: any) => ({
-            ...prevState,
-            contentMain: content,
-            message1: 'Doppelverwendung',
-            displayColor: 'red',
-            entryexit: 'Richtungswechsel',
-          }));
+    //     } else if (valid === null) {
+    //       setState((prevState: any) => ({
+    //         ...prevState,
+    //         contentMain: content,
+    //         message1: 'Doppelverwendung',
+    //         displayColor: 'red',
+    //         entryexit: 'Richtungswechsel',
+    //       }));
 
-          playSound(error);
+    //       playSound(error);
 
-        } else if (valid === undefined) {
-          setState((prevState: any) => ({
-            ...prevState,
-            contentMain: content,
-            message1: 'Karte unbekannt',
-            displayColor: 'red',
-            entryexit: 'Richtungswechsel',
-          }));
+    //     } else if (valid === undefined) {
+    //       setState((prevState: any) => ({
+    //         ...prevState,
+    //         contentMain: content,
+    //         message1: 'Karte unbekannt',
+    //         displayColor: 'red',
+    //         entryexit: 'Richtungswechsel',
+    //       }));
 
-          // receiveSettings();
-          checkSettingCard(props);
-          playSound(error);
-        }
+    //       // receiveSettings();
+    //       checkSettingCard(props);
+    //       playSound(error);
+    //     }
 
-        setTimeout(() => {
-          setState((prevState: any) => ({
-            ...prevState,
-            contentMain: <Text>Scanner ready</Text>,
-            message1: message_1,
-            message2: message_2,
-            displayColor: backgroundColor,
-            fontColor: textColor,
-            controlCard: cC,
-            entryexit: richtungwechsel,
-          }));
-          setLastScanned('');
-        }, 5000);
+    //     setTimeout(() => {
+    //       setState((prevState: any) => ({
+    //         ...prevState,
+    //         contentMain: <Text>Scanner ready</Text>,
+    //         message1: message_1,
+    //         message2: message_2,
+    //         displayColor: backgroundColor,
+    //         fontColor: textColor,
+    //         controlCard: cC,
+    //         entryexit: richtungwechsel,
+    //       }));
+    //       setLastScanned('');
+    //     }, 5000);
 
-        return;
-      } else {
-        // receiveSettings();
-        checkSettingCard(props);
+    //     return;
+    //   } else {
+    //     // receiveSettings();
+    //     checkSettingCard(props);
 
-        return;
-      }
-    }
+    //     return;
+    //   }
+    // }
+
+
     // receiveSettings();
+
+
     checkSettingCard(props);
-  }, [state.selectedOption, state.mode, isConnected, webService, mendant, deviceId, isExit]);
+  }, [state.selectedOption, state.mode, isConnected, webService, mendant, deviceId, isExit, downloadData]);
 
   useEffect(() => {
     if (lastScanned !== '') {
@@ -654,6 +681,9 @@ const HomeScreen = () => {
           <FontAwesome6 name='ellipsis' color={COLORS.WHITE} size={20} />
         </TouchableOpacity>
 
+
+        <Feather name={isConnected ? 'wifi' : 'wifi-off'} color={isConnected ? COLORS.WHITE : COLORS.DANGER} size={20} />
+
       </View>
 
       {/* CONTEXT */}
@@ -663,7 +693,7 @@ const HomeScreen = () => {
 
         <View style={{
           width: '90%',
-          height: "40%",
+          height: "35%",
           backgroundColor: state?.displayColor == COLORS.WHITE ? isConnected ? state.displayColor : COLORS.YELLOW : state.displayColor,
           justifyContent: 'center',
           alignItems: 'center',
@@ -687,33 +717,53 @@ const HomeScreen = () => {
 
         </View>
 
-        <Text style={[styles.txt1, {
-          fontWeight: "400"
-        }]}>{settings?.description1 ? `${settings?.description1} - ${settings.description2}` : "BEN Access Control - GmbH"}</Text>
 
         {
-          state.owner &&
+          downloadData == false &&
+          <PrimaryInput
+            title="Validation Code"
+            keyBoardType={'numeric'}
+            value={validationCode}
+            onChange={(txt) => { setvalidationCode(txt) }}
+          />
+
+        }
+
+        <View style={{
+          alignItems: 'center'
+        }}>
+
           <Text style={[styles.txt1, {
             fontWeight: "400",
-            marginTop: 0
-          }]}>{state.owner}</Text>
-        }
+            marginBottom: downloadData == false ? hp(2) : hp(4),
+
+          }]}>{settings?.description1 ? `${settings?.description1} - ${settings.description2}` : "BEN Access Control - GmbH"}</Text>
+
+          {
+            state.owner &&
+            <Text style={[styles.txt1, {
+              fontWeight: "400",
+              marginTop: 0,
+              marginBottom: 0,
+              position: 'absolute',
+              top: hp(8)
+            }]}>{state.owner}</Text>
+          }
+        </View>
 
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => {
-            saveOfflineEntry({
-              barcode: "175549820599007139099037",
-              direction: "exit",
-              webService: webService,
-              mendant: mendant,
-              deviceId: deviceId
-            })
-            // setLastScanned("2024010101011110110011")
+            setLastScanned(lastScanned ? "" : "270903029131219200259306")
           }}
           style={styles.btn}
         >
-          <Text style={styles.btnTxt}>{isExit ? "AUSGANG" : "Eingang"}</Text>
+          {
+            isLoading ?
+              <ActivityIndicator size={'small'} color={COLORS.WHITE} />
+              :
+              <Text style={styles.btnTxt}>{isExit ? "AUSGANG" : "Eingang"}</Text>
+          }
 
           <TouchableOpacity
             activeOpacity={0.8}
